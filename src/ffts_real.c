@@ -82,8 +82,9 @@ ffts_free_1d_real(ffts_plan_t *p)
 static void
 ffts_execute_1d_real(ffts_plan_t *p, const void *input, void *output)
 {
-    float *const FFTS_RESTRICT out =
-        (float *const FFTS_RESTRICT) FFTS_ASSUME_ALIGNED_16(output);
+    // FIXME!
+    float *const FFTS_RESTRICT out = (float *const FFTS_RESTRICT) output;
+        // (float *const FFTS_RESTRICT) FFTS_ASSUME_ALIGNED_16(output);
     float *const FFTS_RESTRICT buf =
         (float *const FFTS_RESTRICT) FFTS_ASSUME_ALIGNED_32(p->buf);
     const float *const FFTS_RESTRICT A =
@@ -187,7 +188,8 @@ ffts_execute_1d_real(ffts_plan_t *p, const void *input, void *output)
             __m128 t3 = _mm_load_ps(A + i);
             __m128 t4 = _mm_load_ps(B + i);
 
-            _mm_store_ps(out + i, _mm_add_ps(_mm_addsub_ps(
+            // FIXME: storeu -> store
+            _mm_storeu_ps(out + i, _mm_add_ps(_mm_addsub_ps(
                 _mm_mul_ps(t1, _mm_moveldup_ps(t3)),
                 _mm_mul_ps(_mm_shuffle_ps(t1, t1, _MM_SHUFFLE(2,3,0,1)),
                 _mm_movehdup_ps(t3))), _mm_addsub_ps(
@@ -200,7 +202,7 @@ ffts_execute_1d_real(ffts_plan_t *p, const void *input, void *output)
             t3 = _mm_load_ps(A + i + 4);
             t4 = _mm_load_ps(B + i + 4);
 
-            _mm_store_ps(out + i + 4, _mm_add_ps(_mm_addsub_ps(
+            _mm_storeu_ps(out + i + 4, _mm_add_ps(_mm_addsub_ps(
                 _mm_mul_ps(t1, _mm_moveldup_ps(t3)),
                 _mm_mul_ps(_mm_shuffle_ps(t1, t1, _MM_SHUFFLE(2,3,0,1)),
                 _mm_movehdup_ps(t3))), _mm_addsub_ps(
@@ -213,7 +215,7 @@ ffts_execute_1d_real(ffts_plan_t *p, const void *input, void *output)
             t3 = _mm_load_ps(A + i + 8);
             t4 = _mm_load_ps(B + i + 8);
 
-            _mm_store_ps(out + i + 8, _mm_add_ps(_mm_addsub_ps(
+            _mm_storeu_ps(out + i + 8, _mm_add_ps(_mm_addsub_ps(
                 _mm_mul_ps(t1, _mm_moveldup_ps(t3)),
                 _mm_mul_ps(_mm_shuffle_ps(t1, t1, _MM_SHUFFLE(2,3,0,1)),
                 _mm_movehdup_ps(t3))), _mm_addsub_ps(
@@ -226,7 +228,7 @@ ffts_execute_1d_real(ffts_plan_t *p, const void *input, void *output)
             t3 = _mm_load_ps(A + i + 12);
             t4 = _mm_load_ps(B + i + 12);
 
-            _mm_store_ps(out + i + 12, _mm_add_ps(_mm_addsub_ps(
+            _mm_storeu_ps(out + i + 12, _mm_add_ps(_mm_addsub_ps(
                 _mm_mul_ps(t1, _mm_moveldup_ps(t3)),
                 _mm_mul_ps(_mm_shuffle_ps(t1, t1, _MM_SHUFFLE(2,3,0,1)),
                 _mm_movehdup_ps(t3))), _mm_addsub_ps(
@@ -275,7 +277,7 @@ ffts_execute_1d_real(ffts_plan_t *p, const void *input, void *output)
             __m128 t3 = _mm_load_ps(A + i);
             __m128 t4 = _mm_load_ps(B + i);
 
-            _mm_store_ps(out + i, _mm_add_ps(_mm_add_ps(_mm_add_ps(
+            _mm_storeu_ps(out + i, _mm_add_ps(_mm_add_ps(_mm_add_ps(
                 _mm_mul_ps(t1, _mm_shuffle_ps(t3, t3, _MM_SHUFFLE(2,2,0,0))),
                 _mm_mul_ps(_mm_shuffle_ps(t1, t1, _MM_SHUFFLE(2,3,0,1)),
                 _mm_xor_ps(_mm_shuffle_ps(t3, t3, _MM_SHUFFLE(3,3,1,1)), c0))),
@@ -346,7 +348,8 @@ static void
 ffts_execute_1d_real_inv(ffts_plan_t *p, const void *input, void *output)
 {
     float *const FFTS_RESTRICT in =
-        (float *const FFTS_RESTRICT) FFTS_ASSUME_ALIGNED_16(input);
+        (float *const FFTS_RESTRICT) input;
+        // (float *const FFTS_RESTRICT) FFTS_ASSUME_ALIGNED_16(input);
     float *const FFTS_RESTRICT buf =
         (float *const FFTS_RESTRICT) FFTS_ASSUME_ALIGNED_32(p->buf);
     const float *const FFTS_RESTRICT A =
@@ -439,12 +442,12 @@ ffts_execute_1d_real_inv(ffts_plan_t *p, const void *input, void *output)
         __m128 t0 = _mm_loadl_pi(_mm_setzero_ps(), (const __m64*) &in[N]);
 
         for (i = 0; i < N; i += 16) {
-            __m128 t1 = _mm_load_ps(in + i);
-            __m128 t2 = _mm_load_ps(in + N - i - 4);
-            __m128 t3 = _mm_load_ps(A + i);
-            __m128 t4 = _mm_load_ps(B + i);
+            __m128 t1 = _mm_loadu_ps(in + i);
+            __m128 t2 = _mm_loadu_ps(in + N - i - 4);
+            __m128 t3 = _mm_loadu_ps(A + i);
+            __m128 t4 = _mm_loadu_ps(B + i);
 
-            _mm_store_ps(buf + i, _mm_sub_ps(_mm_addsub_ps(
+            _mm_storeu_ps(buf + i, _mm_sub_ps(_mm_addsub_ps(
                 _mm_mul_ps(t1, _mm_moveldup_ps(t3)),
                 _mm_mul_ps(_mm_shuffle_ps(t1, t1, _MM_SHUFFLE(2,3,0,1)),
                 _mm_movehdup_ps(t3))), _mm_addsub_ps(
@@ -452,12 +455,12 @@ ffts_execute_1d_real_inv(ffts_plan_t *p, const void *input, void *output)
                 _mm_shuffle_ps(t4, t4, _MM_SHUFFLE(2,3,0,1))),
                 _mm_mul_ps(_mm_shuffle_ps(t0, t2, _MM_SHUFFLE(2,2,0,0)), t4))));
 
-            t0 = _mm_load_ps(in + N - i - 8);
-            t1 = _mm_load_ps(in + i + 4);
-            t3 = _mm_load_ps(A + i + 4);
-            t4 = _mm_load_ps(B + i + 4);
+            t0 = _mm_loadu_ps(in + N - i - 8);
+            t1 = _mm_loadu_ps(in + i + 4);
+            t3 = _mm_loadu_ps(A + i + 4);
+            t4 = _mm_loadu_ps(B + i + 4);
 
-            _mm_store_ps(buf + i + 4, _mm_sub_ps(_mm_addsub_ps(
+            _mm_storeu_ps(buf + i + 4, _mm_sub_ps(_mm_addsub_ps(
                 _mm_mul_ps(t1, _mm_moveldup_ps(t3)),
                 _mm_mul_ps(_mm_shuffle_ps(t1, t1, _MM_SHUFFLE(2,3,0,1)),
                 _mm_movehdup_ps(t3))), _mm_addsub_ps(
@@ -465,12 +468,12 @@ ffts_execute_1d_real_inv(ffts_plan_t *p, const void *input, void *output)
                 _mm_shuffle_ps(t4, t4, _MM_SHUFFLE(2,3,0,1))),
                 _mm_mul_ps(_mm_shuffle_ps(t2, t0, _MM_SHUFFLE(2,2,0,0)), t4))));
 
-            t1 = _mm_load_ps(in + i + 8);
-            t2 = _mm_load_ps(in + N - i - 12);
-            t3 = _mm_load_ps(A + i + 8);
-            t4 = _mm_load_ps(B + i + 8);
+            t1 = _mm_loadu_ps(in + i + 8);
+            t2 = _mm_loadu_ps(in + N - i - 12);
+            t3 = _mm_loadu_ps(A + i + 8);
+            t4 = _mm_loadu_ps(B + i + 8);
 
-            _mm_store_ps(buf + i + 8, _mm_sub_ps(_mm_addsub_ps(
+            _mm_storeu_ps(buf + i + 8, _mm_sub_ps(_mm_addsub_ps(
                 _mm_mul_ps(t1, _mm_moveldup_ps(t3)),
                 _mm_mul_ps(_mm_shuffle_ps(t1, t1, _MM_SHUFFLE(2,3,0,1)),
                 _mm_movehdup_ps(t3))), _mm_addsub_ps(
@@ -478,12 +481,12 @@ ffts_execute_1d_real_inv(ffts_plan_t *p, const void *input, void *output)
                 _mm_shuffle_ps(t4, t4, _MM_SHUFFLE(2,3,0,1))),
                 _mm_mul_ps(_mm_shuffle_ps(t0, t2, _MM_SHUFFLE(2,2,0,0)), t4))));
 
-            t0 = _mm_load_ps(in + N - i - 16);
-            t1 = _mm_load_ps(in + i + 12);
-            t3 = _mm_load_ps(A + i + 12);
-            t4 = _mm_load_ps(B + i + 12);
+            t0 = _mm_loadu_ps(in + N - i - 16);
+            t1 = _mm_loadu_ps(in + i + 12);
+            t3 = _mm_loadu_ps(A + i + 12);
+            t4 = _mm_loadu_ps(B + i + 12);
 
-            _mm_store_ps(buf + i + 12, _mm_sub_ps(_mm_addsub_ps(
+            _mm_storeu_ps(buf + i + 12, _mm_sub_ps(_mm_addsub_ps(
                 _mm_mul_ps(t1, _mm_moveldup_ps(t3)),
                 _mm_mul_ps(_mm_shuffle_ps(t1, t1, _MM_SHUFFLE(2,3,0,1)),
                 _mm_movehdup_ps(t3))), _mm_addsub_ps(

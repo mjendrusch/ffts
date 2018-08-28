@@ -93,8 +93,12 @@ ffts_execute_nd_real(ffts_plan_t *p, const void *in, void *out)
 
     plan = p->plans[0];
     for (j = 0; j < Ns0; j++) {
+        // plan->transform(plan, din + (j * Ms0), buf + (j * (Ms0 / 2)));
+
         plan->transform(plan, din + (j * Ms0), buf + (j * (Ms0 / 2 + 1)));
     }
+
+    // ffts_transpose(buf, dout, Ms0 / 2, Ns0);
 
     ffts_transpose(buf, dout, Ms0 / 2 + 1, Ns0);
 

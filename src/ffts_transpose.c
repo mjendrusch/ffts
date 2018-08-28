@@ -53,13 +53,15 @@ ffts_transpose(uint64_t *in, uint64_t *out, int w, int h)
 #else
     neon_transpose8(in, out, w, h);
 #endif
-#elif HAVE_SSE2
+#elif HAVE_SSE3
     uint64_t FFTS_ALIGN(64) tmp[TSIZE*TSIZE];
     int tx, ty;
     /* int x; */
     int y;
     int tw = w / TSIZE;
     int th = h / TSIZE;
+    int rw = w - tw * TSIZE;
+    int rh = h - th * TSIZE;
 
     for (ty = 0; ty < th; ty++) {
         for (tx = 0; tx < tw; tx++) {
@@ -71,14 +73,14 @@ ffts_transpose(uint64_t *in, uint64_t *out, int w, int h)
                 /* for (x=0;x<TSIZE;x+=2) {
                    op[x*TSIZE] = ip[x];
                 */
-                __m128d q0 = _mm_load_pd((double*)(ip0 + 0*w));
-                __m128d q1 = _mm_load_pd((double*)(ip0 + 1*w));
-                __m128d q2 = _mm_load_pd((double*)(ip0 + 2*w));
-                __m128d q3 = _mm_load_pd((double*)(ip0 + 3*w));
-                __m128d q4 = _mm_load_pd((double*)(ip0 + 4*w));
-                __m128d q5 = _mm_load_pd((double*)(ip0 + 5*w));
-                __m128d q6 = _mm_load_pd((double*)(ip0 + 6*w));
-                __m128d q7 = _mm_load_pd((double*)(ip0 + 7*w));
+                __m128d q0 = _mm_loadu_pd((double*)(ip0 + 0*w));
+                __m128d q1 = _mm_loadu_pd((double*)(ip0 + 1*w));
+                __m128d q2 = _mm_loadu_pd((double*)(ip0 + 2*w));
+                __m128d q3 = _mm_loadu_pd((double*)(ip0 + 3*w));
+                __m128d q4 = _mm_loadu_pd((double*)(ip0 + 4*w));
+                __m128d q5 = _mm_loadu_pd((double*)(ip0 + 5*w));
+                __m128d q6 = _mm_loadu_pd((double*)(ip0 + 6*w));
+                __m128d q7 = _mm_loadu_pd((double*)(ip0 + 7*w));
 
                 __m128d t0 = _mm_shuffle_pd(q0, q1, _MM_SHUFFLE2(0, 0));
                 __m128d t1 = _mm_shuffle_pd(q0, q1, _MM_SHUFFLE2(1, 1));
@@ -117,30 +119,32 @@ ffts_transpose(uint64_t *in, uint64_t *out, int w, int h)
                 __m128d q2 = _mm_load_pd((double*)(ip0 + 4));
                 __m128d q3 = _mm_load_pd((double*)(ip0 + 6));
 
-                _mm_store_pd((double*)(op0 + 0), q0);
-                _mm_store_pd((double*)(op0 + 2), q1);
-                _mm_store_pd((double*)(op0 + 4), q2);
-                _mm_store_pd((double*)(op0 + 6), q3);
+                _mm_storeu_pd((double*)(op0 + 0), q0);
+                _mm_storeu_pd((double*)(op0 + 2), q1);
+                _mm_storeu_pd((double*)(op0 + 4), q2);
+                _mm_storeu_pd((double*)(op0 + 6), q3);
 
                 op0 += h;
                 ip0 += TSIZE;
             }
         }
     }
-    /*
-    size_t i,j;
-    for(i=0;i<w;i+=2) {
-    for(j=0;j<h;j+=2) {
-    //		out[i*h + j] = in[j*w + i];
-    __m128d q0 = _mm_load_pd((double *)(in + j*w + i));
-    __m128d q1 = _mm_load_pd((double *)(in + j*w + i + w));
-    __m128d t0 = _mm_shuffle_pd(q0, q1, _MM_SHUFFLE2(0, 0));
-    __m128d t1 = _mm_shuffle_pd(q0, q1, _MM_SHUFFLE2(1, 1));
-    _mm_store_pd((double *)(out + i*h + j), t0);
-    _mm_store_pd((double *)(out + i*h + j + h), t1);
+
+    // Take care of everything which is not an integer
+    // multiple of 4.
+    int rx, ry;
+    for (rx = tw * TSIZE - 1; rx < w; ++rx) {
+        for (ry = th * TSIZE - 1; ry < h; ++ry) {
+            out[rx * h + ry] = in[ry * w + rx];
+        }
     }
-    }
-    */
+
+    // int rx, ry;
+    // for (rx = 0; rx < w; ++rx) {
+    //     for (ry = 0; ry < h; ++ry) {
+    //         out[rx * h + ry] = in[ry * w + rx];
+    //     }
+    // }
 #else
     const int bw = 1;
     const int bh = 8;
